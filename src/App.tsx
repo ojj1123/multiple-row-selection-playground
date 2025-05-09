@@ -8,54 +8,15 @@ import ListItemText from "@mui/material/ListItemText";
 import ListItemButton from "@mui/material/ListItemButton";
 import { Checkbox, ListItemIcon } from "@mui/material";
 import { makeData, Person } from "./make-data";
+import { useMultipleSelection } from "./hooks/useMultipleSelection";
 
 export default function App() {
   const [data] = React.useState<Person[]>(() => makeData(100));
-  const [checked, setChecked] = React.useState<Set<string>>(() => new Set());
 
-  const lastSelectedId = React.useRef<string | null>(null);
-
-  const handleToggle = (id: string) => (event: React.MouseEvent<HTMLDivElement>) => {
-    if (lastSelectedId.current === null) {
-      lastSelectedId.current = id;
-    }
-
-    if (event.shiftKey) {
-      const currentIndex = data.findIndex((item) => item.id === id);
-      const lastSelectedIndex = data.findIndex((item) => item.id === lastSelectedId.current);
-
-      if (currentIndex === -1 || lastSelectedIndex === -1) {
-        return;
-      }
-
-      const startIndex = Math.min(currentIndex, lastSelectedIndex);
-      const endIndex = Math.max(currentIndex, lastSelectedIndex);
-
-      setChecked((prev) => {
-        const newChecked = new Set(prev);
-        const currentChecked = newChecked.has(id);
-
-        data.slice(startIndex, endIndex + 1).forEach((item) => {
-          if (currentChecked) {
-            newChecked.delete(item.id);
-          } else {
-            newChecked.add(item.id);
-          }
-        });
-
-        return newChecked;
-      });
-    } else {
-      setChecked((prev) => {
-        const newChecked = new Set(prev);
-        newChecked.has(id) ? newChecked.delete(id) : newChecked.add(id);
-
-        return newChecked;
-      });
-    }
-
-    lastSelectedId.current = id;
-  };
+  const { selected, handleToggle } = useMultipleSelection({
+    data,
+    getId: (item) => item.id,
+  });
 
   return (
     <Container maxWidth="md">
@@ -68,7 +29,7 @@ export default function App() {
         <Typography component="kbd">Click</Typography> to select a range of items.
       </Typography>
 
-      <Typography variant="subtitle1">{checked.size} selected</Typography>
+      <Typography variant="subtitle1">{selected.size} selected</Typography>
 
       <List>
         {data.map((item) => {
@@ -76,7 +37,7 @@ export default function App() {
             <ListItem key={item.id}>
               <ListItemButton onClick={handleToggle(item.id)}>
                 <ListItemIcon>
-                  <Checkbox checked={checked.has(item.id)} />
+                  <Checkbox checked={selected.has(item.id)} />
                 </ListItemIcon>
                 <ListItemText>
                   <Typography variant="subtitle2">
